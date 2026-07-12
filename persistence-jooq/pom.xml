@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>io.github.kszuba1</groupId>
+		<artifactId>jooq-hibernate-comparison</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+	<artifactId>persistence-jooq</artifactId>
+	<name>persistence-jooq</name>
+	<description>Implements the core contracts with jOOQ; hosts the generated code (never hand-edited).</description>
+
+	<dependencies>
+		<dependency>
+			<groupId>io.github.kszuba1</groupId>
+			<artifactId>core</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jooq</groupId>
+			<artifactId>jooq</artifactId>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.codehaus.gmavenplus</groupId>
+				<artifactId>gmavenplus-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>start-postgres-for-codegen</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>execute</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<scripts>
+						<script><![CDATA[
+							import org.testcontainers.postgresql.PostgreSQLContainer
+							import org.testcontainers.utility.DockerImageName
+
+							def image = project.properties.getProperty('postgres.image')
+							def container = new PostgreSQLContainer(DockerImageName.parse(image))
+							container.start()
+							project.properties.setProperty('codegen.db.url', container.jdbcUrl)
+							project.properties.setProperty('codegen.db.username', container.username)
+							project.properties.setProperty('codegen.db.password', container.password)
+							log.info("codegen database started: " + container.jdbcUrl)
+						]]></script>
+					</scripts>
+				</configuration>
+				<dependencies>
+					<dependency>
+						<groupId>org.apache.groovy</groupId>
+						<artifactId>groovy</artifactId>
+						<version>${groovy.version}</version>
+					</dependency>
+					<dependency>
+						<groupId>org.testcontainers</groupId>
+						<artifactId>testcontainers-postgresql</artifactId>
+						<version>${testcontainers.version}</version>
+					</dependency>
+				</dependencies>
+			</plugin>
+			<plugin>
+				<groupId>org.flywaydb</groupId>
+				<artifactId>flyway-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>migrate-codegen-database</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>migrate</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<url>${codegen.db.url}</url>
+					<user>${codegen.db.username}</user>
+					<password>${codegen.db.password}</password>
+					<locations>
+						<location>filesystem:${project.basedir}/../db/src/main/resources/db/migration</location>
+					</locations>
+				</configuration>
+				<dependencies>
+					<dependency>
+						<groupId>org.flywaydb</groupId>
+						<artifactId>flyway-database-postgresql</artifactId>
+						<version>${flyway.version}</version>
+					</dependency>
+					<dependency>
+						<groupId>org.postgresql</groupId>
+						<artifactId>postgresql</artifactId>
+						<version>${postgresql.version}</version>
+					</dependency>
+				</dependencies>
+			</plugin>
+			<plugin>
+				<groupId>org.jooq</groupId>
+				<artifactId>jooq-codegen-maven</artifactId>
+				<executions>
+					<execution>
+						<id>generate-jooq-sources</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<jdbc>
+						<driver>org.postgresql.Driver</driver>
+						<url>${codegen.db.url}</url>
+						<user>${codegen.db.username}</user>
+						<password>${codegen.db.password}</password>
+					</jdbc>
+					<generator>
+						<database>
+							<name>org.jooq.meta.postgres.PostgresDatabase</name>
+							<inputSchema>public</inputSchema>
+							<excludes>flyway_schema_history</excludes>
+						</database>
+						<target>
+							<packageName>io.github.kszuba1.jooq_hibernate_comparison.persistence.jooq.generated</packageName>
+							<directory>target/generated-sources/jooq</directory>
+						</target>
+					</generator>
+				</configuration>
+				<dependencies>
+					<dependency>
+						<groupId>org.postgresql</groupId>
+						<artifactId>postgresql</artifactId>
+						<version>${postgresql.version}</version>
+					</dependency>
+				</dependencies>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>
