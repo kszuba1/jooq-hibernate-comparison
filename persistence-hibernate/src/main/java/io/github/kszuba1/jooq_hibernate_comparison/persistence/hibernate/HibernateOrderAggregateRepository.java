@@ -10,6 +10,7 @@ import io.github.kszuba1.jooq_hibernate_comparison.core.dto.OrderLine;
 import io.github.kszuba1.jooq_hibernate_comparison.core.repository.OrderAggregateRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.PersistenceUnitUtil;
 
 public class HibernateOrderAggregateRepository implements OrderAggregateRepository {
 
@@ -39,8 +40,7 @@ public class HibernateOrderAggregateRepository implements OrderAggregateReposito
 	@Override
 	public Optional<Order> findById(UUID id) {
 		try (EntityManager em = entityManagerFactory.createEntityManager()) {
-			return Optional.ofNullable(em.find(OrderEntity.class, id))
-					.map(HibernateOrderAggregateRepository::toDto);
+			return Optional.ofNullable(em.find(OrderEntity.class, id)).map(this::toDto);
 		}
 	}
 
@@ -56,10 +56,11 @@ public class HibernateOrderAggregateRepository implements OrderAggregateReposito
 		});
 	}
 
-	private static Order toDto(OrderEntity entity) {
+	private Order toDto(OrderEntity entity) {
+		PersistenceUnitUtil unitUtil = entityManagerFactory.getPersistenceUnitUtil();
 		List<OrderLine> lines = entity.getLines().stream()
-				.map(line -> new OrderLine(line.getId(), line.getProduct().getId(), line.getQty(),
-						line.getUnitPrice()))
+				.map(line -> new OrderLine(line.getId(), (UUID) unitUtil.getIdentifier(line.getProduct()),
+						line.getQty(), line.getUnitPrice()))
 				.sorted(Comparator.comparing(OrderLine::productId, PG_UUID_ORDER))
 				.toList();
 		return new Order(entity.getId(), entity.getCustomerId(), entity.getStatus(), entity.getPlacedAt(), lines);
