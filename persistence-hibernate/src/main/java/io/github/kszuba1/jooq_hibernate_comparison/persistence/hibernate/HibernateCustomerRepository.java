@@ -2,13 +2,11 @@ package io.github.kszuba1.jooq_hibernate_comparison.persistence.hibernate;
 
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Function;
 
 import io.github.kszuba1.jooq_hibernate_comparison.core.dto.Customer;
 import io.github.kszuba1.jooq_hibernate_comparison.core.repository.CustomerRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.EntityTransaction;
 
 public class HibernateCustomerRepository implements CustomerRepository {
 
@@ -20,7 +18,7 @@ public class HibernateCustomerRepository implements CustomerRepository {
 
 	@Override
 	public void create(Customer customer) {
-		inTransaction(em -> {
+		Transactions.inTransaction(entityManagerFactory, em -> {
 			em.persist(new CustomerEntity(customer.id(), customer.email(), customer.fullName(),
 					customer.createdAt()));
 			return null;
@@ -48,7 +46,7 @@ public class HibernateCustomerRepository implements CustomerRepository {
 
 	@Override
 	public boolean update(Customer customer) {
-		return inTransaction(em -> {
+		return Transactions.inTransaction(entityManagerFactory, em -> {
 			CustomerEntity entity = em.find(CustomerEntity.class, customer.id());
 			if (entity == null) {
 				return false;
@@ -61,7 +59,7 @@ public class HibernateCustomerRepository implements CustomerRepository {
 
 	@Override
 	public boolean deleteById(UUID id) {
-		return inTransaction(em -> {
+		return Transactions.inTransaction(entityManagerFactory, em -> {
 			CustomerEntity entity = em.find(CustomerEntity.class, id);
 			if (entity == null) {
 				return false;
@@ -69,23 +67,6 @@ public class HibernateCustomerRepository implements CustomerRepository {
 			em.remove(entity);
 			return true;
 		});
-	}
-
-	private <T> T inTransaction(Function<EntityManager, T> work) {
-		try (EntityManager em = entityManagerFactory.createEntityManager()) {
-			EntityTransaction transaction = em.getTransaction();
-			transaction.begin();
-			try {
-				T result = work.apply(em);
-				transaction.commit();
-				return result;
-			} catch (RuntimeException e) {
-				if (transaction.isActive()) {
-					transaction.rollback();
-				}
-				throw e;
-			}
-		}
 	}
 
 	private static Customer toDto(CustomerEntity entity) {

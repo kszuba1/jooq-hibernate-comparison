@@ -14,6 +14,11 @@ public final class HibernatePersistenceFactory {
 		return new PersistenceConfiguration("jooq-hibernate-comparison")
 				.property("jakarta.persistence.nonJtaDataSource", dataSource)
 				.managedClass(CustomerEntity.class)
+				.managedClass(OrderEntity.class)
+				.managedClass(OrderLineEntity.class)
+				.managedClass(ProductEntity.class)
+				.managedClass(TagEntity.class)
+				.managedClass(ProductTagEntity.class)
 				.property("hibernate.hbm2ddl.auto", "validate")
 				.createEntityManagerFactory();
 	}
