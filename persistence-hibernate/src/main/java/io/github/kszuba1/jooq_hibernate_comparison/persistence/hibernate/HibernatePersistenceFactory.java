@@ -1,5 +1,7 @@
 package io.github.kszuba1.jooq_hibernate_comparison.persistence.hibernate;
 
+import java.util.Map;
+
 import javax.sql.DataSource;
 
 import jakarta.persistence.EntityManagerFactory;
@@ -11,7 +13,12 @@ public final class HibernatePersistenceFactory {
 	}
 
 	public static EntityManagerFactory createEntityManagerFactory(DataSource dataSource) {
-		return new PersistenceConfiguration("jooq-hibernate-comparison")
+		return createEntityManagerFactory(dataSource, Map.of());
+	}
+
+	public static EntityManagerFactory createEntityManagerFactory(DataSource dataSource,
+			Map<String, Object> extraProperties) {
+		PersistenceConfiguration configuration = new PersistenceConfiguration("jooq-hibernate-comparison")
 				.property("jakarta.persistence.nonJtaDataSource", dataSource)
 				.managedClass(CustomerEntity.class)
 				.managedClass(OrderEntity.class)
@@ -19,8 +26,9 @@ public final class HibernatePersistenceFactory {
 				.managedClass(ProductEntity.class)
 				.managedClass(TagEntity.class)
 				.managedClass(ProductTagEntity.class)
-				.property("hibernate.hbm2ddl.auto", "validate")
-				.createEntityManagerFactory();
+				.property("hibernate.hbm2ddl.auto", "validate");
+		extraProperties.forEach(configuration::property);
+		return configuration.createEntityManagerFactory();
 	}
 
 }
