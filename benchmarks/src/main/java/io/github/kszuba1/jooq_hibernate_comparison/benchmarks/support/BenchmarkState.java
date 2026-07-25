@@ -50,9 +50,14 @@ public class BenchmarkState {
 	}
 
 	public Customer newCustomer() {
-		UUID id = UUID.randomUUID();
+		UUID id = cheapUuid();
 		return new Customer(id, "bench-" + id + "@example.com", "Bench Customer",
 				OffsetDateTime.now(ZoneOffset.UTC));
+	}
+
+	public static UUID cheapUuid() {
+		java.util.concurrent.ThreadLocalRandom random = java.util.concurrent.ThreadLocalRandom.current();
+		return new UUID(random.nextLong(), random.nextLong());
 	}
 
 	public List<Customer> newCustomers(int count) {
@@ -64,11 +69,11 @@ public class BenchmarkState {
 	}
 
 	public Order newOrder() {
-		UUID orderId = UUID.randomUUID();
+		UUID orderId = cheapUuid();
 		UUID[] products = ids.nextDistinctProductIds(3);
 		List<OrderLine> lines = new ArrayList<>(3);
 		for (int i = 0; i < 3; i++) {
-			lines.add(new OrderLine(UUID.randomUUID(), products[i], 1 + i, new BigDecimal("19.99")));
+			lines.add(new OrderLine(cheapUuid(), products[i], 1 + i, new BigDecimal("19.99")));
 		}
 		return new Order(orderId, ids.nextCustomerId(), OrderStatus.NEW,
 				OffsetDateTime.now(ZoneOffset.UTC), lines);

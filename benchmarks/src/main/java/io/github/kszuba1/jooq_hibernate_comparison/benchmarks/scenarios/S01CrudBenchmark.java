@@ -1,25 +1,54 @@
 package io.github.kszuba1.jooq_hibernate_comparison.benchmarks.scenarios;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import javax.sql.DataSource;
 
 import io.github.kszuba1.jooq_hibernate_comparison.benchmarks.support.BenchmarkState;
 import io.github.kszuba1.jooq_hibernate_comparison.core.dto.Customer;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 
 @BenchmarkMode(Mode.SampleTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
-@Warmup(iterations = 5, time = 1)
+@Warmup(iterations = 8, time = 1)
 @Measurement(iterations = 5, time = 2)
-@Fork(2)
+@Fork(value = 2, jvmArgs = { "-Xms2g", "-Xmx2g" })
 public class S01CrudBenchmark {
+
+	@State(Scope.Benchmark)
+	public static class CreatedRowsTrim {
+
+		private DataSource dataSource;
+
+		@Setup(Level.Trial)
+		public void capture(BenchmarkState state) {
+			dataSource = state.environment.dataSource();
+		}
+
+		@TearDown(Level.Iteration)
+		public void trim() throws SQLException {
+			try (Connection connection = dataSource.getConnection();
+					Statement statement = connection.createStatement()) {
+				statement.execute("delete from customer where email like 'bench-%'");
+			}
+		}
+	}
 
 	@Benchmark
 	public Optional<Customer> findById(BenchmarkState state) {
@@ -32,7 +61,7 @@ public class S01CrudBenchmark {
 	}
 
 	@Benchmark
-	public void create(BenchmarkState state) {
+	public void create(BenchmarkState state, CreatedRowsTrim trim) {
 		state.repos.customers().create(state.newCustomer());
 	}
 
