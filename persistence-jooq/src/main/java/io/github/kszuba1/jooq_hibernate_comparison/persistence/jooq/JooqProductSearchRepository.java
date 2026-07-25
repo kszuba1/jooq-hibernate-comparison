@@ -1,6 +1,7 @@
 package io.github.kszuba1.jooq_hibernate_comparison.persistence.jooq;
 
 import java.util.List;
+import java.util.Locale;
 
 import io.github.kszuba1.jooq_hibernate_comparison.core.dto.ProductFilter;
 import io.github.kszuba1.jooq_hibernate_comparison.core.dto.ProductSummary;
@@ -36,7 +37,12 @@ public class JooqProductSearchRepository implements ProductSearchRepository {
 	private static Condition toCondition(ProductFilter filter) {
 		Condition condition = noCondition();
 		if (filter.nameContains() != null) {
-			condition = condition.and(PRODUCT.NAME.containsIgnoreCase(filter.nameContains()));
+			String escaped = filter.nameContains()
+					.replace("!", "!!")
+					.replace("%", "!%")
+					.replace("_", "!_")
+					.toLowerCase(Locale.ROOT);
+			condition = condition.and(PRODUCT.NAME.lower().like("%" + escaped + "%", '!'));
 		}
 		if (filter.categoryId() != null) {
 			condition = condition.and(PRODUCT.CATEGORY_ID.eq(filter.categoryId()));
