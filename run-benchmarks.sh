@@ -5,6 +5,7 @@ cd "$(dirname "$0")"
 
 TIER="${TIER:-MEDIUM}"
 REVERSE="${REVERSE:-0}"
+PARAM_REVERSE="${PARAM_REVERSE:-0}"
 PROFILE_GC="${PROFILE_GC:-0}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
 
@@ -12,11 +13,14 @@ docker info >/dev/null 2>&1 || { echo "Docker daemon is not running"; exit 1; }
 
 scenarios=(S01 S02 S03 S04 S05 S06 S07 S08)
 if [[ "$REVERSE" == "1" ]]; then
-  mapfile -t scenarios < <(printf '%s\n' "${scenarios[@]}" | tail -r 2>/dev/null || printf '%s\n' "${scenarios[@]}" | sort -r)
+  scenarios=(S08 S07 S06 S05 S04 S03 S02 S01)
+fi
+if [[ "$PARAM_REVERSE" == "1" ]]; then
+  EXTRA_ARGS="$EXTRA_ARGS -p stack=jooq,hibernate -p config=tuned,default"
 fi
 
 stamp="$(date +%Y%m%d-%H%M%S)"
-label="${stamp}-${TIER}$( [[ "$REVERSE" == "1" ]] && echo "-reversed" )"
+label="${stamp}-${TIER}$( [[ "$REVERSE" == "1" ]] && echo "-reversed" )$( [[ "$PARAM_REVERSE" == "1" ]] && echo "-paramrev" )"
 outdir="benchmarks/target/results/${label}"
 mkdir -p "$outdir"
 
