@@ -50,9 +50,13 @@ public record RepositoryBundle(
 	}
 
 	public static RepositoryBundle jooq(DSLContext dsl) {
+		return jooq(dsl, false);
+	}
+
+	public static RepositoryBundle jooq(DSLContext dsl, boolean tunedWrites) {
 		return new RepositoryBundle(
 				new JooqCustomerRepository(dsl),
-				new JooqOrderAggregateRepository(dsl),
+				new JooqOrderAggregateRepository(dsl, tunedWrites),
 				new JooqCustomerBatchRepository(dsl),
 				new JooqOrderListingRepository(dsl),
 				new JooqOrderDetailsRepository(dsl),

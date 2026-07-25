@@ -8,7 +8,6 @@ import io.github.kszuba1.jooq_hibernate_comparison.persistence.hibernate.Hiberna
 import io.github.kszuba1.jooq_hibernate_comparison.persistence.jooq.JooqContextFactory;
 import jakarta.persistence.EntityManagerFactory;
 import org.jooq.DSLContext;
-import org.jooq.conf.Settings;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,7 +20,8 @@ class PersistenceWiring {
 	private static final Map<String, Object> TUNED_HIBERNATE = Map.of(
 			"hibernate.jdbc.batch_size", "50",
 			"hibernate.order_inserts", "true",
-			"hibernate.order_updates", "true");
+			"hibernate.order_updates", "true",
+			"hibernate.criteria.plan_cache_enabled", "true");
 
 	@Bean(destroyMethod = "close")
 	EntityManagerFactory entityManagerFactory(DataSource dataSource,
@@ -31,9 +31,8 @@ class PersistenceWiring {
 	}
 
 	@Bean
-	DSLContext dslContext(DataSource dataSource, @Value("${benchmark.config:default}") String config) {
-		Settings settings = "tuned".equals(config) ? new Settings().withFetchSize(256) : new Settings();
-		return JooqContextFactory.createContext(dataSource, settings);
+	DSLContext dslContext(DataSource dataSource) {
+		return JooqContextFactory.createContext(dataSource);
 	}
 
 	@Bean
@@ -42,8 +41,8 @@ class PersistenceWiring {
 	}
 
 	@Bean
-	RepositoryBundle jooqRepositories(DSLContext dsl) {
-		return RepositoryBundle.jooq(dsl);
+	RepositoryBundle jooqRepositories(DSLContext dsl, @Value("${benchmark.config:default}") String config) {
+		return RepositoryBundle.jooq(dsl, "tuned".equals(config));
 	}
 
 }
