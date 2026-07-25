@@ -27,6 +27,7 @@ import io.github.kszuba1.jooq_hibernate_comparison.core.dto.ProductFilter;
 import io.github.kszuba1.jooq_hibernate_comparison.core.repository.CustomerRepository;
 import io.github.kszuba1.jooq_hibernate_comparison.db.DeterministicSeeder;
 import io.github.kszuba1.jooq_hibernate_comparison.db.SeedProfile;
+import io.github.kszuba1.jooq_hibernate_comparison.persistence.hibernate.HibernateCustomerBatchRepository;
 import io.github.kszuba1.jooq_hibernate_comparison.persistence.hibernate.HibernateCustomerRepository;
 import io.github.kszuba1.jooq_hibernate_comparison.persistence.hibernate.HibernateOrderAggregateRepository;
 import io.github.kszuba1.jooq_hibernate_comparison.persistence.hibernate.HibernateOrderDetailsRepository;
@@ -36,6 +37,7 @@ import io.github.kszuba1.jooq_hibernate_comparison.persistence.hibernate.Hiberna
 import io.github.kszuba1.jooq_hibernate_comparison.persistence.hibernate.HibernateReportingRepository;
 import io.github.kszuba1.jooq_hibernate_comparison.persistence.hibernate.HibernateStockRepository;
 import io.github.kszuba1.jooq_hibernate_comparison.persistence.jooq.JooqContextFactory;
+import io.github.kszuba1.jooq_hibernate_comparison.persistence.jooq.JooqCustomerBatchRepository;
 import io.github.kszuba1.jooq_hibernate_comparison.persistence.jooq.JooqCustomerRepository;
 import io.github.kszuba1.jooq_hibernate_comparison.persistence.jooq.JooqOrderAggregateRepository;
 import io.github.kszuba1.jooq_hibernate_comparison.persistence.jooq.JooqOrderDetailsRepository;
@@ -122,6 +124,7 @@ class SqlBehaviorReportTest {
 
 			CustomerRepository customers = s1.get(stack);
 			capture("S1", "findById", stack, () -> customers.findById(customerId));
+			capture("S1", "findByEmail", stack, () -> customers.findByEmail("customer0@seed.example.com"));
 			capture("S1", "create", stack, () -> customers.create(freshCustomer()));
 			Customer toUpdate = freshCustomer();
 			customers.create(toUpdate);
@@ -136,9 +139,19 @@ class SqlBehaviorReportTest {
 			capture("S2", "findById", stack, () -> aggregates.findById(orderId));
 			capture("S2", "delete aggregate", stack, () -> aggregates.deleteById(created.id()));
 
+			var batches = hibernate ? new HibernateCustomerBatchRepository(emf)
+					: new JooqCustomerBatchRepository(jooqDsl);
+			List<Customer> batchRows = freshCustomers(120);
+			capture("S3", "insertAll 120", stack, () -> batches.insertAll(batchRows));
+			List<Customer> batchUpdates = batchRows.subList(0, 60).stream()
+					.map(c -> new Customer(c.id(), "b." + c.email(), "Batch Updated", c.createdAt()))
+					.toList();
+			capture("S3", "updateAll 60", stack, () -> batches.updateAll(batchUpdates));
+
 			var listings = hibernate ? new HibernateOrderListingRepository(emf)
 					: new JooqOrderListingRepository(jooqDsl);
 			capture("S4", "page 20/0", stack, () -> listings.findByStatus(OrderStatus.NEW, 20, 0));
+			capture("S4", "page 20/500", stack, () -> listings.findByStatus(OrderStatus.NEW, 20, 500));
 
 			var details = hibernate ? new HibernateOrderDetailsRepository(emf)
 					: new JooqOrderDetailsRepository(jooqDsl);
@@ -151,6 +164,8 @@ class SqlBehaviorReportTest {
 
 			var search = hibernate ? new HibernateProductSearchRepository(emf)
 					: new JooqProductSearchRepository(jooqDsl);
+			capture("S7", "name only", stack, () -> search.search(new ProductFilter("smart", null, null,
+					null, false, null)));
 			capture("S7", "full filter", stack, () -> search.search(new ProductFilter("a", null,
 					new BigDecimal("1.00"), new BigDecimal("2000.00"), true, "sale")));
 
@@ -165,6 +180,17 @@ class SqlBehaviorReportTest {
 				.allSatisfy(r -> assertThat(r.total()).isEqualTo(1));
 		assertThat(rows).filteredOn(r -> r.scenario().equals("S2") && r.operation().equals("findById"))
 				.allSatisfy(r -> assertThat(r.total()).isEqualTo(2));
+		assertThat(rows).filteredOn(r -> r.scenario().equals("S3")
+						&& r.operation().startsWith("insertAll") && r.stack().equals("hibernate"))
+				.allSatisfy(r -> assertThat(r.insert()).isEqualTo(120));
+	}
+
+	private static List<Customer> freshCustomers(int count) {
+		List<Customer> customers = new java.util.ArrayList<>(count);
+		for (int i = 0; i < count; i++) {
+			customers.add(freshCustomer());
+		}
+		return customers;
 	}
 
 	private static void capture(String scenario, String operation, String stack, Runnable work) {
