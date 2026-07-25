@@ -28,9 +28,9 @@ import org.openjdk.jmh.annotations.Warmup;
 
 @BenchmarkMode(Mode.SampleTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
-@Warmup(iterations = 5, time = 1)
+@Warmup(iterations = 8, time = 1)
 @Measurement(iterations = 5, time = 2)
-@Fork(2)
+@Fork(value = 2, jvmArgs = { "-Xms2g", "-Xmx2g" })
 public class V01WiringValidationBenchmark {
 
 	@State(Scope.Benchmark)
