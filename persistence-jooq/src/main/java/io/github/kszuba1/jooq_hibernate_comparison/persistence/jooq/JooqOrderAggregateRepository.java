@@ -9,6 +9,7 @@ import io.github.kszuba1.jooq_hibernate_comparison.core.dto.OrderLine;
 import io.github.kszuba1.jooq_hibernate_comparison.core.dto.OrderStatus;
 import io.github.kszuba1.jooq_hibernate_comparison.core.repository.OrderAggregateRepository;
 import io.github.kszuba1.jooq_hibernate_comparison.persistence.jooq.generated.tables.records.OrdersRecord;
+import org.jooq.BatchBindStep;
 import org.jooq.DSLContext;
 
 import static io.github.kszuba1.jooq_hibernate_comparison.persistence.jooq.generated.Tables.ORDERS;
@@ -17,9 +18,15 @@ import static io.github.kszuba1.jooq_hibernate_comparison.persistence.jooq.gener
 public class JooqOrderAggregateRepository implements OrderAggregateRepository {
 
 	private final DSLContext dsl;
+	private final boolean batchLineInserts;
 
 	public JooqOrderAggregateRepository(DSLContext dsl) {
+		this(dsl, false);
+	}
+
+	public JooqOrderAggregateRepository(DSLContext dsl, boolean batchLineInserts) {
 		this.dsl = dsl;
+		this.batchLineInserts = batchLineInserts;
 	}
 
 	@Override
@@ -32,14 +39,26 @@ public class JooqOrderAggregateRepository implements OrderAggregateRepository {
 					.set(ORDERS.STATUS, order.status().name())
 					.set(ORDERS.PLACED_AT, order.placedAt())
 					.execute();
-			for (OrderLine line : order.lines()) {
-				ctx.insertInto(ORDER_LINE)
-						.set(ORDER_LINE.ID, line.id())
-						.set(ORDER_LINE.ORDER_ID, order.id())
-						.set(ORDER_LINE.PRODUCT_ID, line.productId())
-						.set(ORDER_LINE.QTY, line.quantity())
-						.set(ORDER_LINE.UNIT_PRICE, line.unitPrice())
-						.execute();
+			if (batchLineInserts && !order.lines().isEmpty()) {
+				BatchBindStep batch = ctx.batch(ctx
+						.insertInto(ORDER_LINE, ORDER_LINE.ID, ORDER_LINE.ORDER_ID, ORDER_LINE.PRODUCT_ID,
+								ORDER_LINE.QTY, ORDER_LINE.UNIT_PRICE)
+						.values((UUID) null, null, null, null, null));
+				for (OrderLine line : order.lines()) {
+					batch = batch.bind(line.id(), order.id(), line.productId(), line.quantity(),
+							line.unitPrice());
+				}
+				batch.execute();
+			} else {
+				for (OrderLine line : order.lines()) {
+					ctx.insertInto(ORDER_LINE)
+							.set(ORDER_LINE.ID, line.id())
+							.set(ORDER_LINE.ORDER_ID, order.id())
+							.set(ORDER_LINE.PRODUCT_ID, line.productId())
+							.set(ORDER_LINE.QTY, line.quantity())
+							.set(ORDER_LINE.UNIT_PRICE, line.unitPrice())
+							.execute();
+				}
 			}
 		});
 	}
