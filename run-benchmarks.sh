@@ -20,7 +20,10 @@ if [[ "$PARAM_REVERSE" == "1" ]]; then
 fi
 
 stamp="$(date +%Y%m%d-%H%M%S)"
-label="${stamp}-${TIER}$( [[ "$REVERSE" == "1" ]] && echo "-reversed" )$( [[ "$PARAM_REVERSE" == "1" ]] && echo "-paramrev" )"
+suffix=""
+if [[ "$REVERSE" == "1" ]]; then suffix="-reversed"; fi
+if [[ "$PARAM_REVERSE" == "1" ]]; then suffix="${suffix}-paramrev"; fi
+label="${stamp}-${TIER}${suffix}"
 outdir="benchmarks/target/results/${label}"
 mkdir -p "$outdir"
 
