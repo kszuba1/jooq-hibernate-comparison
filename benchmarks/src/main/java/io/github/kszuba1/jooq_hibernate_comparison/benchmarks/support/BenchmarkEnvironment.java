@@ -5,8 +5,11 @@ import java.util.Map;
 import javax.sql.DataSource;
 
 import io.github.kszuba1.jooq_hibernate_comparison.benchmarks.BenchmarksApplication;
+import io.github.kszuba1.jooq_hibernate_comparison.core.repository.CustomerBatchRepository;
+import io.github.kszuba1.jooq_hibernate_comparison.core.repository.ReportingRepository;
 import io.github.kszuba1.jooq_hibernate_comparison.db.DeterministicSeeder;
 import io.github.kszuba1.jooq_hibernate_comparison.db.SeedProfile;
+import jakarta.persistence.EntityManagerFactory;
 import org.flywaydb.core.Flyway;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -51,6 +54,20 @@ public final class BenchmarkEnvironment implements HarnessEnvironment {
 	@Override
 	public RepositoryBundle repositories(String stack) {
 		return context.getBean(stack + "Repositories", RepositoryBundle.class);
+	}
+
+	public ReportingRepository reporting(String stack, String style) {
+		if ("jooq".equals(stack)) {
+			return repositories(stack).reporting();
+		}
+		return RepositoryBundle.hibernateReporting(context.getBean(EntityManagerFactory.class), style);
+	}
+
+	public CustomerBatchRepository customerBatches(String stack, String style) {
+		if ("jooq".equals(stack)) {
+			return repositories(stack).customerBatches();
+		}
+		return RepositoryBundle.hibernateCustomerBatches(context.getBean(EntityManagerFactory.class), style);
 	}
 
 	@Override

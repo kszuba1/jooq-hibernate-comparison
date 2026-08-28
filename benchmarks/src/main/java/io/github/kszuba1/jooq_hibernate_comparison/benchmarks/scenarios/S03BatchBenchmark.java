@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.github.kszuba1.jooq_hibernate_comparison.benchmarks.support.BenchmarkState;
 import io.github.kszuba1.jooq_hibernate_comparison.core.dto.Customer;
+import io.github.kszuba1.jooq_hibernate_comparison.core.repository.CustomerBatchRepository;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -59,14 +60,29 @@ public class S03BatchBenchmark {
 		}
 	}
 
+	@State(Scope.Benchmark)
+	public static class LoadStyle {
+
+		@Param({ "find", "multiload" })
+		public String loadStyle;
+
+		public CustomerBatchRepository repository;
+
+		@Setup(Level.Trial)
+		public void resolve(BenchmarkState state) {
+			repository = state.environment.customerBatches(state.stack, loadStyle);
+		}
+
+	}
+
 	@Benchmark
 	public void insertBatch(BenchmarkState state, BatchInput input) {
 		state.repos.customerBatches().insertAll(input.inserts);
 	}
 
 	@Benchmark
-	public void updateBatch(BenchmarkState state, BatchInput input) {
-		state.repos.customerBatches().updateAll(input.updates);
+	public void updateBatch(BatchInput input, LoadStyle style) {
+		style.repository.updateAll(input.updates);
 	}
 
 }

@@ -8,8 +8,10 @@ import io.github.kszuba1.jooq_hibernate_comparison.core.repository.OrderListingR
 import io.github.kszuba1.jooq_hibernate_comparison.core.repository.ProductSearchRepository;
 import io.github.kszuba1.jooq_hibernate_comparison.core.repository.ReportingRepository;
 import io.github.kszuba1.jooq_hibernate_comparison.core.repository.StockRepository;
+import io.github.kszuba1.jooq_hibernate_comparison.persistence.hibernate.HibernateCriteriaReportingRepository;
 import io.github.kszuba1.jooq_hibernate_comparison.persistence.hibernate.HibernateCustomerBatchRepository;
 import io.github.kszuba1.jooq_hibernate_comparison.persistence.hibernate.HibernateCustomerRepository;
+import io.github.kszuba1.jooq_hibernate_comparison.persistence.hibernate.HibernateHqlReportingRepository;
 import io.github.kszuba1.jooq_hibernate_comparison.persistence.hibernate.HibernateOrderAggregateRepository;
 import io.github.kszuba1.jooq_hibernate_comparison.persistence.hibernate.HibernateOrderDetailsRepository;
 import io.github.kszuba1.jooq_hibernate_comparison.persistence.hibernate.HibernateOrderListingRepository;
@@ -36,6 +38,23 @@ public record RepositoryBundle(
 		ReportingRepository reporting,
 		ProductSearchRepository productSearch,
 		StockRepository stock) {
+
+	public static ReportingRepository hibernateReporting(EntityManagerFactory emf, String style) {
+		return switch (style) {
+			case "native" -> new HibernateReportingRepository(emf);
+			case "hql" -> new HibernateHqlReportingRepository(emf);
+			case "criteria" -> new HibernateCriteriaReportingRepository(emf);
+			default -> throw new IllegalArgumentException("unknown S6 reporting style: " + style);
+		};
+	}
+
+	public static CustomerBatchRepository hibernateCustomerBatches(EntityManagerFactory emf, String style) {
+		return switch (style) {
+			case "find" -> new HibernateCustomerBatchRepository(emf, false);
+			case "multiload" -> new HibernateCustomerBatchRepository(emf, true);
+			default -> throw new IllegalArgumentException("unknown S3 load style: " + style);
+		};
+	}
 
 	public static RepositoryBundle hibernate(EntityManagerFactory emf) {
 		return new RepositoryBundle(

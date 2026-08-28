@@ -20,6 +20,7 @@ public final class HibernatePersistenceFactory {
 			Map<String, Object> extraProperties) {
 		PersistenceConfiguration configuration = new PersistenceConfiguration("jooq-hibernate-comparison")
 				.property("jakarta.persistence.nonJtaDataSource", dataSource)
+				.managedClass(CategoryEntity.class)
 				.managedClass(CustomerEntity.class)
 				.managedClass(OrderEntity.class)
 				.managedClass(OrderLineEntity.class)
