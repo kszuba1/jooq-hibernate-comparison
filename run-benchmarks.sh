@@ -35,6 +35,12 @@ for scenario in "${scenarios[@]}"; do
   args="$scenario -p tier=$TIER -rf json -rff target/results/${label}/${scenario}.json"
   [[ "$PROFILE_GC" == "1" ]] && args="$args -prof gc"
   [[ -n "$EXTRA_ARGS" ]] && args="$args $EXTRA_ARGS"
+  if [[ "$PARAM_REVERSE" == "1" ]]; then
+    case "$scenario" in
+      S03) args="$args -p loadStyle=multiload,find" ;;
+      S06) args="$args -p reportingStyle=criteria,hql,native" ;;
+    esac
+  fi
   echo "== $(date +%H:%M:%S) running $scenario"
   ./mvnw -B -ntp -Pbench -pl benchmarks exec:exec -Dbench.args="$args" 2>&1 | tee "$outdir/${scenario}.log" \
     | grep -E '^# Run progress|^Benchmark |Iteration' | tail -2
