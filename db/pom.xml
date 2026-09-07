@@ -9,7 +9,7 @@
 	</parent>
 	<artifactId>db</artifactId>
 	<name>db</name>
-	<description>Owns the schema (Flyway migrations, single source of truth) and the deterministic data seeder.</description>
+	<description>Flyway migrations and the test data seeder.</description>
 
 	<dependencies>
 		<dependency>

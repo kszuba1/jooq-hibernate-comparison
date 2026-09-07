@@ -9,7 +9,7 @@
 	</parent>
 	<artifactId>persistence-jooq</artifactId>
 	<name>persistence-jooq</name>
-	<description>Implements the core contracts with jOOQ; hosts the generated code (never hand-edited).</description>
+	<description>Repository implementations using jOOQ.</description>
 
 	<dependencies>
 		<dependency>

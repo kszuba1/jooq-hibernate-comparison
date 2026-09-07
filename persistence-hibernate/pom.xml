@@ -9,7 +9,7 @@
 	</parent>
 	<artifactId>persistence-hibernate</artifactId>
 	<name>persistence-hibernate</name>
-	<description>Implements the core contracts with plain Hibernate ORM (JPA). No Spring, no Spring Data.</description>
+	<description>Repository implementations using Hibernate ORM.</description>
 
 	<dependencies>
 		<dependency>

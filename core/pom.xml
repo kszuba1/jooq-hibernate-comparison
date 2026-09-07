@@ -9,7 +9,7 @@
 	</parent>
 	<artifactId>core</artifactId>
 	<name>core</name>
-	<description>Repository contracts, shared DTOs and scenario definitions. Depends on nothing.</description>
+	<description>Repository interfaces and shared DTOs.</description>
 
 	<dependencies>
 		<dependency>
@@ -70,7 +70,7 @@
 									<includes>
 										<include>*:*:*:*:test</include>
 									</includes>
-									<message>core must not depend on anything - its zero-dependency guarantee is what keeps the comparison fair.</message>
+									<message>core must not have any non-test dependencies.</message>
 								</bannedDependencies>
 							</rules>
 						</configuration>

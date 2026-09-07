@@ -9,7 +9,7 @@
 	</parent>
 	<artifactId>benchmarks</artifactId>
 	<name>benchmarks</name>
-	<description>JMH harness and Spring wiring. The ONLY module allowed to see both persistence implementations.</description>
+	<description>JMH benchmarks for both persistence implementations.</description>
 
 	<dependencies>
 		<dependency>

@@ -119,7 +119,7 @@
 										<exclude>org.springframework.data:spring-data-jpa</exclude>
 									</excludes>
 									<searchTransitive>true</searchTransitive>
-									<message>Banned dependency found - in-memory databases, boilerplate generators and Spring Data are off-limits; they would invalidate the thesis measurements.</message>
+									<message>Banned dependency found (in-memory database, Lombok, MapStruct or Spring Data JPA).</message>
 								</bannedDependencies>
 							</rules>
 						</configuration>
